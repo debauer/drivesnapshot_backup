@@ -1,21 +1,32 @@
-import os,subprocess,sys
+import os,subprocess,sys,shutil
 from subprocess import Popen, PIPE
 from os import path
 
 import configparser
 
-networkPath = "\\\\fileserv\\Backup\\" # ins Netzwerk über WLan Kabel!
-drivePath = "Z:" # wenns von Platte sein soll
-rootPath = networkPath # auf networkPath oder drivePath setzen
-maxCycles = 3;
+networkPath = "\\\\fileserv\\Backup\\" 	# ins Netzwerk über WLan Kabel!
+drivePath = "Z:" 						# wenns von Platte sein soll
+rootPath = networkPath 					# auf networkPath oder drivePath setzen
+maxCycles = 4;
 maxDiff = 1;
 
 # Nicht ändern!
 toolPath = rootPath + "tools\\"
 backupPath = rootPath + "backups\\"
-iniPath = backupPath + "status\\"
+iniPath = backupPath
+# iniPath = backupPath + "status\\"
 
 Config = configparser.ConfigParser()
+
+# ini vorhanden? Wenn nicht default erstellen
+def makeConfig(path):
+	if not (os.path.isfile(path)):
+		cfgfile = open(path,'w')
+		Config.add_section('Backup')
+		Config.set('Backup','full','0')
+		Config.set('Backup','diff','0')
+		Config.write(cfgfile)
+		cfgfile.close()
 
 # File vorhanden wenn nicht beenden
 def checkFile(path,file):
@@ -34,41 +45,35 @@ def checkOrdner(path):
 checkFile(toolPath,"snapshot.exe")
 checkOrdner(rootPath + "tools")
 checkOrdner(rootPath + "backups")
-checkOrdner(backupPath + "status")	
+# checkOrdner(backupPath + "status")	
 checkOrdner(backupPath + "cycle1")	
 
-# ini vorhanden? Wenn nicht default erstellen
-if not (os.path.isfile(iniPath + "status1.ini")):
-	cfgfile = open(iniPath + "status1.ini",'w')
-	Config.add_section('Backup')
-	Config.set('Backup','full','0')
-	Config.set('Backup','diff','0')
-	Config.write(cfgfile)
-	cfgfile.close()
+Config = configparser.ConfigParser()
 
+makeConfig(iniPath + "status.ini");
 
-Config = Config.read(iniPath + "status1.ini")
-if(Config.get("Backup","full") == 1 and Config.get("Backup","diff") == maxDiff):
-	# neuer Cycle
-	# Cycles umbenennen
+# Config einlesen
+Config.read(iniPath + "status.ini")
+if(int(Config['Backup']['full']) == 1 and int(Config['Backup']['diff']) == maxDiff):
 	i = maxCycles
+	# Cycles werden incrementiert und die überzähligen gelöscht.
 	while(i):
-		if(os.path.isfile(iniPath + "status" + i + ".ini")):
+		if(os.access(backupPath + "cycle" + str(i), os.F_OK)):
 			if(i != maxCycles):
-				os.rename(iniPath + "status" + i + ".ini", iniPath + "status" + (i+1) + ".ini")
+				os.rename(backupPath + "cycle" + str(i), backupPath + "cycle" + str(i+1))
 			else:
-				os.remove(iniPath + "status" + i + ".ini")			
-		if(os.access(backupPath + "cycle" + i, os.F_OK)):
-			if(i != maxCycles):
-				os.rename(backupPath + "cycle" + i, backupPath + "cycle" + (i+1))
-			else:
-				os.rmdir(backupPath + "cycle" + i)
+				shutil.rmtree(backupPath + "cycle" + str(i))
 		i = i - 1
+	# da es nun keinen Cycle1 mehr gibt den Ordner erstellen
+	checkOrdner(backupPath + "cycle1")
+	
+
+
 
 
 
 # print(sys.stdout.encoding)
 
-x = subprocess.Popen(['ping', 'google.de'], stdout=PIPE)
-for line in x.stdout:
-	sys.stdout.write(line.decode(sys.stdout.encoding))
+# x = subprocess.Popen(['ping', 'google.de'], stdout=PIPE)
+# for line in x.stdout:
+	# sys.stdout.write(line.decode(sys.stdout.encoding))
