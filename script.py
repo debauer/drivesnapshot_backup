@@ -2,26 +2,12 @@ import os,subprocess,sys,shutil,msvcrt,configparser,smtplib
 from subprocess import Popen, PIPE, call
 from os import path
 from msvcrt import getch
+import time
 
-
-
-
-networkPath = "\\\\fileserv\\Backup\\" 	# ins Netzwerk über WLan Kabel!
-drivePath = "Z:" 						# wenns von Platte sein soll
-rootPath = networkPath 					# auf networkPath oder drivePath setzen
-version = '0.1'
-modus = 'NORMAL'
-shutdown = 0
-
-# Nicht ändern!
-toolPath = rootPath + "tools\\"
-backupPath = rootPath + "backups\\"
-iniPath = backupPath
-# iniPath = backupPath + "status\\"
-
-status = configparser.ConfigParser()
-config = configparser.ConfigParser()
-
+# ======================================================================================================================
+# ======================================================================================================================
+#													Funktionen
+# ======================================================================================================================
 
 
 # ini vorhanden? Wenn nicht default erstellen
@@ -32,37 +18,43 @@ def makeStatus(path):
 		status.set('Backup','full','0')
 		status.set('Backup','diff','0')
 		status.write(statusfile)
-		cfgfile.close()
+		statusfile.close()
 # FUNKTIONSENDE
 
 # File vorhanden wenn nicht beenden
 def checkFile(path,file):
 	if not (os.path.isfile(path + file)):
-		print("File: " + file + " ist nicht Vorhanden")
-		input("ENTER drücken zum Beenden")
-		sys.exit();
+		displayStartErrorFile(file)
 # FUNKTIONSENDE
-	
+
+def beenden():
+	input("ENTER drücken zum Beenden")
+	sys.exit()
+
 # Ordner vorhanden wenn nicht erstellen
 def checkOrdner(path):
 	if not (os.access(path, os.F_OK)):
 		os.mkdir(path)
-# FUNKTIONSENDE		
+# FUNKTIONSENDE
 
 def makeBackup():
-	x = subprocess.Popen([toolPath + 'snapshot.exe', 'google.de'], stdout=PIPE)
+	subprocess.Popen([toolPath + 'snapshot.exe', ' '])
 	# for line in x.stdout:
 		# sys.stdout.write(line.decode(sys.stdout.encoding))
-# FUNKTIONSENDE	
-		
+# FUNKTIONSENDE
+
+def verifyBackup():
+	subprocess.Popen([toolPath + 'snapshot.exe', ' '], stdout=PIPE)
+# FUNKTIONSENDE
+
 def herunterfahren():
 	if(modus == "MOD_B"):
 		#system herunterfahren
 		os.system('shutdown -s -f')
-# FUNKTIONSENDE	
+# FUNKTIONSENDE
 
 def sendMail():
-	
+
 	if(config['EMAIL']['aktiv'] == "true"):
 		smtpserver = config['EMAIL']['server'] # SMTP server
 		port = config['EMAIL']['port']
@@ -86,18 +78,19 @@ def sendMail():
 			session.quit()#
 		except Exception as exc:
 			print("eMail senden fehlgeschlagen")
-	
-def startDisplay():
+
+def displayStartmenue():
 	if(int(status['Backup']['full']) == 1):
 		state = "Differenziell"
 	else:
 		state = "Vollbackup"
 	os.system('CLS') # display leeren
+	os.system('@TITLE Tagessicherung: Startmenue')
 	os.system('@COLOR 9F')
 	print("================================================== Version " + version + "  =====")
 	print("  Autor: David Bauer, Schlager GmbH			")
 	print("---------------------------------------------------------------------")
-	print("																		")		
+	print("																		")
 	print("  TAGESSICHERUNG                                 *** "+ state + " ***")
 	print("  -------------- 													")
 	print("  [S] == SICHERN														")
@@ -112,32 +105,139 @@ def startDisplay():
 	while(falscheTaste):
 		taste = getch().decode(sys.stdout.encoding)
 		falscheTaste = 0
-		if(taste == 's' or taste == 'S'):
+		if taste == 's' or taste == 'S':
 			modus = 'NORMAL'
-		elif(taste == 'b' or taste == 'B'):
+		elif taste == 'b' or taste == 'B':
 			modus = 'NORMAL'
 			shutdown = 1
-		elif(taste == 'f' or taste == 'F'):
+		elif taste == 'f' or taste == 'F':
 			modus = 'FORCE'
 		elif(taste == 'x' or taste == 'X'):
 			sys.exit(); # beenden
 		else:
 			falscheTaste = 1
 	os.system('CLS') # display leeren
-	
 # FUNKTIONSENDE
+
+def displayBackuperror():
+	os.system('@TITLE Tagessicherung FEHLERHAFT!')
+	os.system('@COLOR CF')
+	print('')
+	print("-------------------------------------------------- Version " + version + " -----")
+	print(' Die Tagessicherung war abgeschlossen am ' + time.strftime("%d/%m/%Y") + ' um ' + time.strftime("%H:%M:%S") + ' Uhr')
+	print(' Es sind Fehler aufgetreten!')
+	print('')
+	print(' Hinweis: Informieren Sie unbedingt den Administrator!')
+	print('---------------------------------------------------------------------')
+	print('')
+	beenden()
+
+def displayBackupok():
+	os.system('@TITLE Tagessicherung abgeschlossen!')
+	os.system('@COLOR 2F')
+	print('')
+	print("-------------------------------------------------- Version " + version + " -----")
+	print(' Die Tagessicherung war abgeschlossen am ' + time.strftime("%d/%m/%Y") + ' um ' + time.strftime("%H:%M:%S") + ' Uhr')
+	print('')
+	print(' Sie koennen das Protokoll in diesem Fenster scrollen.')
+	print('---------------------------------------------------------------------')
+	print('')
+	if(shutdown):
+		herunterfahren()
+	beenden()
+
+def displayStartErrorFolder():
+	os.system('@TITLE Tagessicherung auf USB-Platte konnte nicht gestartet werden!')
+	os.system('@COLOR CF')
+	print('')
+	print("-------------------------------------------------- Version " + version + " -----")
+	print('')
+	print(' F E H L E R:')
+	print(' ------------')
+	print('')
+	print(' Der Zielordner fuer die Sicherung wurde nicht gefunden !!!')
+	print(' Erwarteter Zielordner ist: ' + networkPath)
+	print('')
+	print('---------------------------------------------------------------------')
+	print('')
+	beenden()
+
+def displayStartErrorFile(file):
+	os.system('@TITLE Tagessicherung auf USB-Platte konnte nicht gestartet werden!')
+	os.system('@COLOR CF')
+	print('')
+	print("-------------------------------------------------- Version " + version + " -----")
+	print('')
+	print(' F E H L E R:')
+	print(' ------------')
+	print('')
+	print(' Ein File fuer die Sicherung wurde nicht gefunden !!!')
+	print(" File: " + file + " ist nicht Vorhanden")
+	print('')
+	print('---------------------------------------------------------------------')
+	print('')
+	beenden()
+
+def displaySecondstart():
+	os.system('@TITLE Sicherung kann nicht mehrfach gestartet werden!')
+	os.system('@COLOR E4')
+	print('')
+	print("-------------------------------------------------- Version " + version + " -----")
+	print('')
+	print(' W A R N U N G !!')
+	print(' ----------------')
+	print('')
+	print(' Eine Sicherung kann derzeit nicht gestartet werden!')
+	print(' Warten Sie, bis die aktuell laufende Sicherung abgeschlossen ist!')
+	print('')
+	print(' HINWEIS: Diese Meldung wird auch angezeigt, wenn eine fruehere')
+	print(' Sicherung nicht korrekt beendet wurde.')
+	print(' Informieren Sie in diesem Fall den Administrator!')
+	print('')
+	print('---------------------------------------------------------------------')
+	print('')
+	beenden()
+
+
+# ======================================================================================================================
+# ======================================================================================================================
+#													Main CODE!
+# ======================================================================================================================
+
+
+networkPath = "\\\\fileserv\\Backup\\" 	# ins Netzwerk über WLan Kabel!
+drivePath = "Z:" 						# wenns von Platte sein soll
+rootPath = networkPath 					# auf networkPath oder drivePath setzen
+version = ' 0.1'
+modus = 'NORMAL'
+shutdown = 0
+
+# Nicht ändern!
+toolPath = rootPath + "tools\\"
+backupPath = rootPath + "backups\\"
+iniPath = backupPath
+# iniPath = backupPath + "status\\"
+
+status = configparser.ConfigParser()
+config = configparser.ConfigParser()
 
 
 # Checken ob alle benötigten Ordner/Files vorhanden sind
 
+# rootpath erreichbar?!
+if not (os.access(rootPath, os.F_OK)):
+	displaySecondstart()
+
+# Alle files vorhanden?
 checkFile(toolPath,"snapshot.exe")
+checkFile(toolPath,"config.ini")
+
+# Ordnerstruktur checken
 checkOrdner(rootPath + "tools")
 checkOrdner(rootPath + "backups")
 checkOrdner(backupPath + "cycle1")	
 
-makeStatus(iniPath + "status.ini");
-
-
+makeStatus(iniPath + "status.ini")
 
 # Status einlesen
 status.read(iniPath + "status.ini")
@@ -145,11 +245,13 @@ status.read(iniPath + "status.ini")
 # Config einlesen
 config.read(toolPath + "config.ini")
 
-startDisplay()
-
 maxCycles = int(config['BACKUP']['cycles'])
 maxDiff = int(config['BACKUP']['diff'])
 drives = config.items( "DRIVES" )
+
+# lets gooo
+displayStartmenue()
+
 
 if(int(status['Backup']['full']) == 1 and int(status['Backup']['diff']) == maxDiff):
 	i = maxCycles
@@ -171,10 +273,7 @@ for key, drive in drives:
 	
 # Backup zuende
 sendMail()
-if(shutdown):
-	herunterfahren()
-input("ENTER drücken zum Beenden")
-sys.exit();
+displayBackupok()
 	
 
 
