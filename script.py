@@ -6,54 +6,94 @@ import time
 
 # ======================================================================================================================
 # ======================================================================================================================
-#													Funktionen
+#
 # ======================================================================================================================
 
 
 # ini vorhanden? Wenn nicht default erstellen
-def makeStatus(path):
-	if not (os.path.isfile(path)):
-		statusfile = open(path,'w')
-		status.add_section('Backup')
-		status.set('Backup','full','0')
-		status.set('Backup','diff','0')
-		status.write(statusfile)
-		statusfile.close()
-# FUNKTIONSENDE
+def make_status(path):
+	statusfile = open(path,'w')
+	status.add_section('AKT')
+	status.set('AKT','full','0')
+	status.set('AKT','diff','0')
+	status.write(statusfile)
+	statusfile.close()
 
 # File vorhanden wenn nicht beenden
-def checkFile(path,file):
+def check_file(path,file):
 	if not (os.path.isfile(path + file)):
-		displayStartErrorFile(file)
-# FUNKTIONSENDE
+		return 0
+	else:
+		return 1
 
+# Programm beenden
 def beenden():
 	input("ENTER drücken zum Beenden")
 	sys.exit()
 
 # Ordner vorhanden wenn nicht erstellen
-def checkOrdner(path):
+def check_ordner(path):
 	if not (os.access(path, os.F_OK)):
-		os.mkdir(path)
-# FUNKTIONSENDE
+		return 0
+	else:
+		return 1
 
-def makeBackup():
-	subprocess.Popen([toolPath + 'snapshot.exe', ' '])
-	# for line in x.stdout:
-		# sys.stdout.write(line.decode(sys.stdout.encoding))
-# FUNKTIONSENDE
+# Ordner erstellen
+def make_order(path):
+	os.mkdir(path)
 
-def verifyBackup():
-	subprocess.Popen([toolPath + 'snapshot.exe', ' '], stdout=PIPE)
-# FUNKTIONSENDE
-
+#system herunterfahren
 def herunterfahren():
-	if(modus == "MOD_B"):
-		#system herunterfahren
-		os.system('shutdown -s -f')
+	os.system('shutdown -s -f')
+
+
+# Backup + Verify
+def make_backup(drive,diff = 0):
+	print('')
+	print("=====================================================================")
+	print('---- Partion-Sicherung: ' + drive + ': ' + time.strftime("%d/%m/%Y") + ' ----')
+	print("=====================================================================")
+	print('')
+	backup_folder = backupPath + 'cycle1\\' + drive + "_drive"
+	check_ordner(backup_folder)
+	#print(toolPath + 'snapshot.exe ' + drive + ': ' + backup_folder + '\\' + drive + '_full.sna' + ' -W ')
+	if diff:
+		process = subprocess.Popen(toolPath + 'snapshot.exe ' + drive + ': ' + backup_folder + '\\' + drive + '_diff' + str(diff) + '.sna' + ' -h' + backup_folder + '\\' + drive + '_full.hsh -W ', shell=True)
+	else:
+		process = subprocess.Popen(toolPath + 'snapshot.exe ' + drive + ': ' + backup_folder + '\\' + drive + '_full.sna' + ' -W ', shell=True)
+	process.wait()
+	errorcode = process.returncode
+	process.kill()
+	print('')
+	print('---- Backup wird Verifiziert ----')
+	print('')
+	if diff:
+		process = subprocess.Popen(toolPath + 'snapshot.exe ' + backup_folder + '\\' + drive + '_diff' + str(diff) + '.sna' + ' -T -W ', shell=True)
+	else:
+		process = subprocess.Popen(toolPath + 'snapshot.exe ' + backup_folder + '\\' + drive + '_full.sna' + ' -T -W ', shell=True)
+	process.wait()
+	errorcode = process.returncode
+	process.kill()
+	print('')
+	print('---- Partion-Sicherung beendet ----')
+	print('')
 # FUNKTIONSENDE
 
-def sendMail():
+
+def new_circle():
+	i = maxCycles
+	# Cycles werden incrementiert und die überzähligen gelöscht.
+	while(i):
+		if(os.access(backupPath + "cycle" + str(i), os.F_OK)):
+			if(i != maxCycles):
+				os.rename(backupPath + "cycle" + str(i), backupPath + "cycle" + str(i+1))
+			else:
+				shutil.rmtree(backupPath + "cycle" + str(i))
+		i = i - 1
+	# da es nun keinen Cycle1 mehr gibt den Ordner erstellen
+	check_ordner(backupPath + "cycle1")
+
+def send_mail():
 
 	if(config['EMAIL']['aktiv'] == "true"):
 		smtpserver = config['EMAIL']['server'] # SMTP server
@@ -62,6 +102,7 @@ def sendMail():
 		password = config['EMAIL']['pw']  # for SMTP AUTH, set SMTP password here
 		sender = config['EMAIL']['sender']
 		to = config['EMAIL']['to']
+		protocol = config['EMAIL']['protocol']
 
 		subject = 'Backup wurde beendet'
 		text = "GOIL"
@@ -72,14 +113,16 @@ def sendMail():
 			session = smtplib.SMTP()
 			session.connect(smtpserver, int(port))
 			#session.set_debuglevel(1)
-			session.starttls()
+			if str(protocol).lower() == "ssl" :
+				session.starttls()
 			session.login(username, password)
 			session.sendmail(sender, to, message)
 			session.quit()#
 		except Exception as exc:
-			print("eMail senden fehlgeschlagen")
+			if verbose:
+				print("eMail senden fehlgeschlagen")
 
-def displayStartmenue():
+def display_startmenue():
 	if(int(status['Backup']['full']) == 1):
 		state = "Differenziell"
 	else:
@@ -119,7 +162,7 @@ def displayStartmenue():
 	os.system('CLS') # display leeren
 # FUNKTIONSENDE
 
-def displayBackuperror():
+def display_backup_error():
 	os.system('@TITLE Tagessicherung FEHLERHAFT!')
 	os.system('@COLOR CF')
 	print('')
@@ -132,7 +175,7 @@ def displayBackuperror():
 	print('')
 	beenden()
 
-def displayBackupok():
+def display_backup_ok():
 	os.system('@TITLE Tagessicherung abgeschlossen!')
 	os.system('@COLOR 2F')
 	print('')
@@ -146,7 +189,8 @@ def displayBackupok():
 		herunterfahren()
 	beenden()
 
-def displayStartErrorFolder():
+def display_start_error_folder():
+	os.system('CLS') # display leeren
 	os.system('@TITLE Tagessicherung auf USB-Platte konnte nicht gestartet werden!')
 	os.system('@COLOR CF')
 	print('')
@@ -162,7 +206,8 @@ def displayStartErrorFolder():
 	print('')
 	beenden()
 
-def displayStartErrorFile(file):
+def display_start_error_file(file):
+	os.system('CLS') # display leeren
 	os.system('@TITLE Tagessicherung auf USB-Platte konnte nicht gestartet werden!')
 	os.system('@COLOR CF')
 	print('')
@@ -178,7 +223,8 @@ def displayStartErrorFile(file):
 	print('')
 	beenden()
 
-def displaySecondstart():
+def display_start_error_second():
+	os.system('CLS') # display leeren
 	os.system('@TITLE Sicherung kann nicht mehrfach gestartet werden!')
 	os.system('@COLOR E4')
 	print('')
@@ -201,7 +247,7 @@ def displaySecondstart():
 
 # ======================================================================================================================
 # ======================================================================================================================
-#													Main CODE!
+#                                                   Main CODE!
 # ======================================================================================================================
 
 
@@ -211,6 +257,8 @@ rootPath = networkPath 					# auf networkPath oder drivePath setzen
 version = ' 0.1'
 modus = 'NORMAL'
 shutdown = 0
+verbose = 1
+errorcode = 0
 
 # Nicht ändern!
 toolPath = rootPath + "tools\\"
@@ -226,18 +274,27 @@ config = configparser.ConfigParser()
 
 # rootpath erreichbar?!
 if not (os.access(rootPath, os.F_OK)):
-	displaySecondstart()
+	display_start_error_folder()
 
 # Alle files vorhanden?
-checkFile(toolPath,"snapshot.exe")
-checkFile(toolPath,"config.ini")
+if not check_file(toolPath,"snapshot.exe"):
+	display_start_error_file(toolPath + "snapshot.exe")
+
+if not check_file(toolPath,"config.ini"):
+	display_start_error_file(toolPath + "config.ini")
 
 # Ordnerstruktur checken
-checkOrdner(rootPath + "tools")
-checkOrdner(rootPath + "backups")
-checkOrdner(backupPath + "cycle1")	
+if not check_ordner(rootPath + "tools"):
+	make_order(rootPath + "tools")
 
-makeStatus(iniPath + "status.ini")
+if not check_ordner(rootPath + "backups"):
+	make_order(rootPath + "backups")
+
+if not check_ordner(backupPath + "cycle1"):
+	make_order(rootPath + "cycle1")
+
+if not check_file(iniPath, "status.ini"):
+	make_status(iniPath + "status.ini")
 
 # Status einlesen
 status.read(iniPath + "status.ini")
@@ -249,33 +306,32 @@ maxCycles = int(config['BACKUP']['cycles'])
 maxDiff = int(config['BACKUP']['diff'])
 drives = config.items( "DRIVES" )
 
+full = int(status['AKT']['full']) # 1
+diffs = int(status['AKT']['diff'])
+run = int(status['AKT']['run'])
+
+if run == 'true': #woops, letztes backup hat gefailed
+	display_start_error_second()
+
 # lets gooo
-displayStartmenue()
+display_startmenue()
 
+# Wenn Circle voll ist einen neuen starten
+if full == 1 and diffs == maxDiff :
+	new_circle()
 
-if(int(status['Backup']['full']) == 1 and int(status['Backup']['diff']) == maxDiff):
-	i = maxCycles
-	# Cycles werden incrementiert und die überzähligen gelöscht.
-	while(i):
-		if(os.access(backupPath + "cycle" + str(i), os.F_OK)):
-			if(i != maxCycles):
-				os.rename(backupPath + "cycle" + str(i), backupPath + "cycle" + str(i+1))
-			else:
-				shutil.rmtree(backupPath + "cycle" + str(i))
-		i = i - 1
-	# da es nun keinen Cycle1 mehr gibt den Ordner erstellen
-	checkOrdner(backupPath + "cycle1")
-	
 # jetzt wird gebackupt!!!
 for key, drive in drives:
-	a = 1
+	# drive = Laufwerksnummer
+	if full:
+		make_backup(drive,diffs)
+	else:
+		make_backup(drive)
 	
 	
 # Backup zuende
-sendMail()
-displayBackupok()
-	
-
+send_mail()
+display_backup_ok()
 
 # print(sys.stdout.encoding)
 
