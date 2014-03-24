@@ -188,6 +188,7 @@ def display_backup_ok():
 	if(shutdown):
 		herunterfahren()
 	beenden()
+	
 
 def display_start_error_folder():
 	os.system('CLS') # display leeren
