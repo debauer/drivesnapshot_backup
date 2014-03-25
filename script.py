@@ -43,7 +43,7 @@ def check_ordner(path):
 
 # Ordner erstellen
 def make_ordner(path):
-	os.mkdir(path)
+	print(os.mkdir(path))
 
 #system herunterfahren
 def herunterfahren():
@@ -79,7 +79,7 @@ def make_backup(drive,diff = 0):
 	errorcode = process.returncode
 	process.kill()
 	print('')
-	print('---- Partion-Sicherung beendet ----')
+	print('---- Partition-Sicherung beendet ----')
 	print('')
 # FUNKTIONSENDE
 
