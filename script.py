@@ -16,8 +16,11 @@ def make_status(path):
 	status.add_section('AKT')
 	status.set('AKT','full','0')
 	status.set('AKT','diff','0')
+	status.set('AKT','run','false')
 	status.write(statusfile)
 	statusfile.close()
+
+
 
 # File vorhanden wenn nicht beenden
 def check_file(path,file):
@@ -39,7 +42,7 @@ def check_ordner(path):
 		return 1
 
 # Ordner erstellen
-def make_order(path):
+def make_ordner(path):
 	os.mkdir(path)
 
 #system herunterfahren
@@ -55,7 +58,8 @@ def make_backup(drive,diff = 0):
 	print("=====================================================================")
 	print('')
 	backup_folder = backupPath + 'cycle1\\' + drive + "_drive"
-	check_ordner(backup_folder)
+	if not check_ordner(backup_folder):
+		make_ordner(backup_folder)
 	#print(toolPath + 'snapshot.exe ' + drive + ': ' + backup_folder + '\\' + drive + '_full.sna' + ' -W ')
 	if diff:
 		process = subprocess.Popen(toolPath + 'snapshot.exe ' + drive + ': ' + backup_folder + '\\' + drive + '_diff' + str(diff) + '.sna' + ' -h' + backup_folder + '\\' + drive + '_full.hsh -W ', shell=True)
@@ -91,7 +95,8 @@ def new_circle():
 				shutil.rmtree(backupPath + "cycle" + str(i))
 		i = i - 1
 	# da es nun keinen Cycle1 mehr gibt den Ordner erstellen
-	check_ordner(backupPath + "cycle1")
+	if not check_ordner(backupPath + "cycle1"):
+		make_ordner(backupPath + "cycle1")
 
 def send_mail():
 
@@ -123,7 +128,7 @@ def send_mail():
 				print("eMail senden fehlgeschlagen")
 
 def display_startmenue():
-	if(int(status['Backup']['full']) == 1):
+	if(int(status['AKT']['full']) == 1):
 		state = "Differenziell"
 	else:
 		state = "Vollbackup"
@@ -188,7 +193,7 @@ def display_backup_ok():
 	if(shutdown):
 		herunterfahren()
 	beenden()
-	
+
 
 def display_start_error_folder():
 	os.system('CLS') # display leeren
@@ -286,13 +291,13 @@ if not check_file(toolPath,"config.ini"):
 
 # Ordnerstruktur checken
 if not check_ordner(rootPath + "tools"):
-	make_order(rootPath + "tools")
+	make_ordner(rootPath + "tools")
 
 if not check_ordner(rootPath + "backups"):
-	make_order(rootPath + "backups")
+	make_ordner(rootPath + "backups")
 
 if not check_ordner(backupPath + "cycle1"):
-	make_order(rootPath + "cycle1")
+	make_ordner(backupPath + "cycle1")
 
 if not check_file(iniPath, "status.ini"):
 	make_status(iniPath + "status.ini")
@@ -307,9 +312,9 @@ maxCycles = int(config['BACKUP']['cycles'])
 maxDiff = int(config['BACKUP']['diff'])
 drives = config.items( "DRIVES" )
 
-full = int(status['AKT']['full']) # 1
+full = int(status['AKT']['full'])
 diffs = int(status['AKT']['diff'])
-run = int(status['AKT']['run'])
+run = status['AKT']['run']
 
 if run == 'true': #woops, letztes backup hat gefailed
 	display_start_error_second()
@@ -317,25 +322,40 @@ if run == 'true': #woops, letztes backup hat gefailed
 # lets gooo
 display_startmenue()
 
+status['AKT']['run'] = 'true'
+with open(iniPath + "status.ini", 'w') as statusfile:
+    status.write(statusfile)
+
 # Wenn Circle voll ist einen neuen starten
 if full == 1 and diffs == maxDiff :
 	new_circle()
+	status['AKT']['full'] = '0'
+	status['AKT']['diff'] = '0'
+	full = 0
+	diffs = 0
+	with open(iniPath + "status.ini", 'w') as statusfile:
+		status.write(statusfile)
 
 # jetzt wird gebackupt!!!
 for key, drive in drives:
 	# drive = Laufwerksnummer
 	if full:
-		make_backup(drive,diffs)
+		make_backup(drive,diffs+1)
 	else:
 		make_backup(drive)
+
+if not full:
+	status['AKT']['full'] = '1'
+	status['AKT']['diff'] = '0'
+else:
+	status['AKT']['diff'] = str(diffs+1)
+status['AKT']['run'] = 'false'
+with open(iniPath + "status.ini", 'w') as statusfile:
+	status.write(statusfile)
 	
 	
 # Backup zuende
 send_mail()
 display_backup_ok()
 
-# print(sys.stdout.encoding)
-
-# x = subprocess.Popen(['ping', 'google.de'], stdout=PIPE)
-# for line in x.stdout:
-	# sys.stdout.write(line.decode(sys.stdout.encoding))
+# Vielen dank an Johannes Bozenhardt!
