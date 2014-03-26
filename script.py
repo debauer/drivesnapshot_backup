@@ -37,13 +37,18 @@ def beenden():
 # Ordner vorhanden wenn nicht erstellen
 def check_ordner(path):
 	if not (os.access(path, os.F_OK)):
+		print("0: " + path)
 		return 0
 	else:
+		print("1: " + path)
 		return 1
 
 # Ordner erstellen
 def make_ordner(path):
-	print(os.mkdir(path))
+	try:
+		os.mkdir(path)
+	except OSError:
+		pass
 
 #system herunterfahren
 def herunterfahren():
@@ -58,8 +63,7 @@ def make_backup(drive,diff = 0):
 	print("=====================================================================")
 	print('')
 	backup_folder = backupPath + 'cycle1\\' + drive + "_drive"
-	if not check_ordner(backup_folder):
-		make_ordner(backup_folder)
+	make_ordner(backup_folder)
 	#print(toolPath + 'snapshot.exe ' + drive + ': ' + backup_folder + '\\' + drive + '_full.sna' + ' -W ')
 	if diff:
 		process = subprocess.Popen(toolPath + 'snapshot.exe ' + drive + ': ' + backup_folder + '\\' + drive + '_diff' + str(diff) + '.sna' + ' -h' + backup_folder + '\\' + drive + '_full.hsh -W ', shell=True)
