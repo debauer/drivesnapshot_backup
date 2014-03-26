@@ -3,10 +3,23 @@ from subprocess import Popen, PIPE, call
 from os import path
 from msvcrt import getch
 import time
+import socket
+
 
 # ======================================================================================================================
 # ======================================================================================================================
-#
+#	Base Conf
+# ======================================================================================================================
+
+networkPath = "\\\\fileserv\\Backup\\" 	# ins Netzwerk über WLan Kabel!
+drivePath = "Z:" 						# wenns von Platte sein soll
+rootPath = networkPath 					# auf networkPath oder drivePath setzen
+
+
+
+# ======================================================================================================================
+# ======================================================================================================================
+#	Funktionen
 # ======================================================================================================================
 
 
@@ -44,6 +57,9 @@ def check_ordner(path):
 		return 1
 
 # Ordner erstellen
+# Python scheint asyncron zu arbeiten was Betriebsystem/Filesystem zugriff angeht.
+# os.access(path, os.F_OK) meldet vereinzelt gelöschte Ordner als vorhanden.
+# Könnte auch nur mitm Netzwerk Share zutun haben.
 def make_ordner(path):
 	try:
 		os.mkdir(path)
@@ -260,15 +276,12 @@ def display_start_error_second():
 #                                                   Main CODE!
 # ======================================================================================================================
 
-
-networkPath = "\\\\fileserv\\Backup\\" 	# ins Netzwerk über WLan Kabel!
-drivePath = "Z:" 						# wenns von Platte sein soll
-rootPath = networkPath 					# auf networkPath oder drivePath setzen
 version = ' 0.1'
 modus = 'NORMAL'
 shutdown = 0
 verbose = 1
 errorcode = 0
+hostname = socket.gethostname()
 
 # Nicht ändern!
 toolPath = rootPath + "tools\\"
