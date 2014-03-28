@@ -23,6 +23,7 @@ rootPath = networkPath 					# auf networkPath oder drivePath setzen
 # ======================================================================================================================
 
 
+
 # ini vorhanden? Wenn nicht default erstellen
 def make_status(path):
 	statusfile = open(path,'w')
