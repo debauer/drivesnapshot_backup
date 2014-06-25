@@ -1,8 +1,6 @@
 Drivesnapshot Backup
 ====================
 
-<h3>WORK IN PROGRESS</h3>
-
 Ein Python Script für das Kommerzielle Drivesnapshot http://www.drivesnapshot.de/de/ .<br>
 Drivesnapshot erstellt 1:1 Images des laufenden Systems und hat uns/mir schon einige male den Arsch gerettet. 
 
