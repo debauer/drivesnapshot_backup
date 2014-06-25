@@ -10,7 +10,7 @@ Gedacht für Backups auf einen Fileserver, mit einem Backup Verzeichnis pro User
 
 <h2>Installation</h2>
 
-Sie benötigen eine Lizenz von Drive SnapShot! http://www.drivesnapshot.de/de/ <br>
+Sie benötigen eine/mehrere Lizenz/en von Drive SnapShot! http://www.drivesnapshot.de/de/ <br>
 Die Scripte sind auf meine Rechner/Server Struktur ausgelegt. 
 
 1. Alle Files in die richtigen Verzeichnisse kopieren.<br>
