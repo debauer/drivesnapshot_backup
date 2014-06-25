@@ -28,8 +28,8 @@ Die Scripte sind auf meine Rechner/Server Struktur ausgelegt.
 3. eventuell Pfad zur Python.exe in dienst.py ändern
 
 4. dienst.py mit vollen Admin Rechen ausstatten. Dafür diese <a href="http://tipps4you.de/tipp-32-win7.html">Anleitung</a> befolgen. 
-Statt CCleaner geben Sie die python.exe (z.B. C:\Python33\python.exe) an mit "C:\Script\dienst.py" als Argument.
-
-Alternative: <br>
+Statt CCleaner geben Sie die python.exe (z.B. C:\Python33\python.exe) an mit "C:\Script\dienst.py" als Argument.<br>
+<b>Alternative:<b/><br>
 nutzen des start.ps1 scripts. Das ist ein kleines Batchfile das prüft ob es Adminrechte hat und wenn nicht sich neustartet mit Admin Rechten. Das ist aber nicht sehr elegant und kann auch mal zu Problemen führen.
 
+5. Starten Sie ihre Backups über die erstellte Verknüpfung oder mit start.ps1.
