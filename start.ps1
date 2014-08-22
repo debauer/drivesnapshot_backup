@@ -24,5 +24,6 @@ Function areWeAdmin{
 
 areWeAdmin
 
-# Leider absolute Pfade.
+# Leider absolute Pfade. - muss auf Zielrechner angepasst werden.
+# CHANGE
 C:\Python33\python.exe E:\Workspace_priv\drivesnapshot_backup\./script.py

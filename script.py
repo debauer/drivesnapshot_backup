@@ -4,6 +4,9 @@ from os import path
 from msvcrt import getch
 import time
 import socket
+import urllib.request
+
+# V0.2
 
 
 # ======================================================================================================================
@@ -15,7 +18,7 @@ networkPath = "\\\\fileserv\\Backup\\" 	# ins Netzwerk über WLan Kabel!
 drivePath = "Z:" 						# wenns von Platte sein soll
 rootPath = networkPath 					# auf networkPath oder drivePath setzen
 
-
+apiURL = "http://fileserv:9000/Backup"
 
 # ======================================================================================================================
 # ======================================================================================================================
@@ -147,6 +150,14 @@ def send_mail():
 		except Exception as exc:
 			if verbose:
 				print("eMail senden fehlgeschlagen")
+
+
+def safe_status():
+	# Status soll in der Datenbank gespeichert werden.
+	dbname 		= "it"
+	dbserver 	= "fileserv"
+	dbuser		= "it"
+	dbpw 		= "opti"
 
 def display_startmenue():
 	if(int(status['AKT']['full']) == 1):
@@ -335,10 +346,12 @@ diffs = int(status['AKT']['diff'])
 run = status['AKT']['run']
 
 if run == 'true': #woops, letztes backup hat gefailed
+	urllib.request.urlopen(apiURL + "/create?hostname=" + hostname + "&status=ERROR&error=last backup has failed")
 	display_start_error_second()
 
 # lets gooo
 display_startmenue()
+urllib.request.urlopen(apiURL + "/create?hostname=" + hostname + "&status=START&modus=" + modus)
 
 status['AKT']['run'] = 'true'
 with open(iniPath + "status.ini", 'w') as statusfile:
@@ -358,8 +371,10 @@ if full == 1 and diffs == maxDiff :
 for key, drive in drives:
 	# drive = Laufwerksnummer
 	if full:
+		urllib.request.urlopen(apiURL + "/create?hostname=" + hostname + "&status=DIFF&modus=" + modus + "&drive=" + drive + "&circle=" + str(diffs))
 		make_backup(drive,diffs+1)
 	else:
+		urllib.request.urlopen(apiURL + "/create?hostname=" + hostname + "&status=FULL&modus=" + modus + "&drive=" + drive)
 		make_backup(drive)
 
 if not full:
@@ -373,7 +388,8 @@ with open(iniPath + "status.ini", 'w') as statusfile:
 	
 	
 # Backup zuende
-send_mail()
+#send_mail()
+urllib.request.urlopen(apiURL + "/create?hostname=" + hostname + "&status=OK&modus=" + modus)
 display_backup_ok()
 
 # Vielen dank an Johannes Bozenhardt!
